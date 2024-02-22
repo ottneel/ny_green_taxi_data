@@ -16,3 +16,12 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=roots
     ports:
       - "8080:80"
+  data_ingestion:
+    image: ny_taxi_pipeline:01
+    environment:
+      DATABASE_URL: postgresql://roots:roots@pgdatabase:5432/green_ny_taxi
+    volumes:
+      - "./ny_taxi_postgres_data:/var/lib/postgresql/data"
+    depends_on:
+      - pgdatabase
+    command: ["--user","roots","--password","roots","--host","pgdatabase","--port","5432","--db","green_ny_taxi","--table_name","green_taxi_trips","--table_name2","taxi_zone_lookup","--url","https://github.com/DataTalksClub/nyc-tlc-data/releases/download/green/green_tripdata_2019-09.csv.gz","--url2","https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"]

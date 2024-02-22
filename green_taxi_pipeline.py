@@ -20,20 +20,21 @@ def main(params):
     url2 = params.url2
     url = params.url
 
-
+    # Check the file extension of the URL to determine the output file name
     if url.endswith('.csv.gz'):
-        csv_name = 'output.csv.gz'
+        csv_name = 'output.csv.gz' # If the URL ends with '.csv.gz', set the output file name to 'output.csv.gz'
     else:
-        csv_name = 'output.csv'
-
-    subprocess.run([r"C:\Program Files\Git\mingw64\bin\wget.exe", url, "-O", csv_name])
+        csv_name = 'output.csv' # Otherwise, set the output file name to 'output.csv'
+        
+   # Download the contents from the URL and save it to the specified output file.
+    subprocess.run(["wget", url, "-O", csv_name])   # Use wget command to download the contents from the URL and save it to the output file
 
     if url2.endswith('.csv.gz'):
         csv2_name = 'output2.csv.gz'
     else:
         csv2_name = 'output2.csv'
-
-    subprocess.run([r"C:\Program Files\Git\mingw64\bin\wget.exe", url2, "-O", csv2_name])
+    # download the contents on the second url and save the output to csv2_name variable
+    subprocess.run(["wget", url2, "-O", csv2_name])
 
 
     #create the connection engine to the database
@@ -45,29 +46,40 @@ def main(params):
     # create a dataframe iterator to load the data in chunk sizes
     data_iter = pd.read_csv(csv_name, iterator = True, chunksize = 100000)
 
+    df = next(data_iter)
+
+    df.lpep_pickup_datetime = pd.to_datetime(df.lpep_pickup_datetime)
+    df.lpep_dropoff_datetime = pd.to_datetime(df.lpep_dropoff_datetime)
+
     #input the table names in the database using the to_sql method
-    data.head(0).to_sql(name=table_name, con=engine, if_exists='replace')
+    df.head(0).to_sql(name=table_name, con=engine, if_exists='replace')
+
+    df.to_sql(name=table_name, con=engine, if_exists='append')
 
     #try block to iterate through the dataset and load the data chunk by chunk. and stop when there are no more chunks to add
     while True:
         try:
             t_start = time() #track start time of each chunk
-            data = next(data_iter)
+            df = next(data_iter)
             #change the datatype of the pickup and dropoff time from object to datetime
-            data['lpep_pickup_datetime'] = pd.to_datetime(data['lpep_pickup_datetime'])
-            data['lpep_dropoff_datetime'] = pd.to_datetime(data['lpep_dropoff_datetime'])
-            data.to_sql(name = table_name, con = engine, if_exists='append')
+
+            df['lpep_pickup_datetime'] = pd.to_datetime(df['lpep_pickup_datetime'])
+            df['lpep_dropoff_datetime'] = pd.to_datetime(df['lpep_dropoff_datetime'])
+
+            # add each chunk to the database
+            df.to_sql(name = table_name, con = engine, if_exists='append')
     
             t_end = time() #track end time of each chunk
     
             print('inserted another chunk...., took %.3f second' % (t_end - t_start))
         except StopIteration:
             print('No more chunks to add')
-        break
+            break # leave the loop
 
     #read and load the second table in the database using the to_sql method
     data2=pd.read_csv(csv2_name)
     data2.to_sql(name = table_name2, con = engine, if_exists='replace')
+    print('added second csv file')
 
 
 if __name__ == '__main__':
