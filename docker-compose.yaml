@@ -18,4 +18,3 @@ services:
       - "8080:80"
     volumes:
       -"./ny_taxi_postgres_data:/var/lib/pgadmin"
-  
