@@ -17,4 +17,4 @@ services:
     ports:
       - "8080:80"
     volumes:
-      -"./ny_taxi_postgres_data:/var/lib/pgadmin"
+      - "./ny_taxi_pgadmin_data:/var/lib/pgadmin/"
